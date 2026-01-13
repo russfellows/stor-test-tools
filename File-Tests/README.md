@@ -7,22 +7,26 @@ This directory contains configuration files for testing file systems using **IOR
 ### IOR - Parallel File I/O Benchmark
 **Container**: `quay.io/russfellows-sig65/io500`
 
-IOR (Interleaved-Or-Random) is a widely used parallel file I/O benchmark for:
-- Distributed file system performance testing
-- HPC (High-Performance Computing) storage evaluation
-- Various I/O patterns: sequential, random, strided
-- Metadata operation testing
-- Both POSIX and HPC-specific file systems
+IOR (Interleaved-Or-Random) is a parallel file I/O benchmark for distributed file system testing with:
+- Multi-host MPI-based distributed execution
+- MLCommons Storage workload patterns
+- Metadata operation testing (MDtest tier)
+- Support for Lustre, GPFS, POSIX file systems
+- Comprehensive performance metrics and aggregation
+
+**For detailed setup and execution instructions, see**: [IOR-scripts/README.md](IOR-scripts/README.md)
 
 ### vdbench - File System Workload Generator
 **Container**: `quay.io/russfellows-sig65/file-tests`
 
-vdbench is a flexible file system workload simulator for:
-- Realistic file system workload definition
+vdbench is a flexible file system workload simulator featuring:
+- Agent and interactive container modes
 - Single and multi-threaded operation
-- Complex workloads with multiple file types
+- Complex workload definitions with multiple file types
 - Detailed performance analysis and statistics
 - Reproducible workload execution
+
+**For detailed setup and execution instructions, see**: [vdbench-scripts/README.md](vdbench-scripts/README.md)
 
 **Additional tools in this container**:
 - **fio** - Flexible I/O workload simulator
@@ -84,17 +88,24 @@ Simulates 3D UNet segmentation model training I/O patterns:
 - Network connectivity (for distributed tests)
 - Sufficient disk space for test data
 
-### IOR Test Example
+### IOR Test Execution
 
 ```bash
 # Pull the container
 docker pull quay.io/russfellows-sig65/io500
 
-# Run IOR test with configuration
+# For distributed multi-host benchmarking with MPI coordination
+# See: IOR-scripts/README.md for complete setup and execution
+bash io500-mpi-coordinate-gemini-AWS.sh    # Or GCP variant
+bash drop-cache-GCP.sh                     # Drop caches at the right timing
+
+# For basic single-host testing
 docker run -it -v /mount/point:/testdir \
   quay.io/russfellows-sig65/io500 \
-  ior -f IOR-MDtest-full.ini
+  ior -f IOR-MDtest-full.ini -o /testdir/
 ```
+
+**For comprehensive IOR setup, infrastructure requirements, cloud platform coordination, and execution guidance, see [IOR-scripts/README.md](IOR-scripts/README.md)**
 
 ### vdbench Test Example
 
@@ -149,8 +160,8 @@ cd /opt/vdbench && ./vdbench -f resnet50-1hosts_parmfile.txt -o /mnt/lustre/outp
 ## Detailed Documentation
 
 For detailed information on each tool:
-- **IOR**: See [Readme-Vdbench.md](Readme-Vdbench.md) for IOR test types (Easy, Standard, Hard, MDtest) and documentation links
-- **vdbench**: See [Readme-Vdbench.md](Readme-Vdbench.md) for shell script execution and configuration guides
+- **IOR**: See [IOR-scripts/README.md](IOR-scripts/README.md) for infrastructure setup, distributed coordination, and execution guidance
+- **vdbench**: See [vdbench-scripts/README.md](vdbench-scripts/README.md) for configuration and execution guides
 
 ### External Documentation Resources
 
