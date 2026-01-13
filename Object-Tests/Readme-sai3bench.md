@@ -2,16 +2,111 @@
 
 This directory contains configuration files for testing object storage systems using **sai3-bench**, a high-performance benchmarking tool for S3-compatible and other object storage backends.
 
+## Core Tools in sai3-tools Container
+
+### s3dlio - Universal Storage I/O Library
+**Repository**: https://github.com/russfellows/s3dlio
+
+s3dlio is a high-performance, multi-protocol storage library that provides:
+
+- **CLI Tool (s3-cli)**: Universal command-line interface for all storage backends
+  - `s3-cli ls` - List contents (supports regex patterns, progress indicators, and counting)
+  - `s3-cli get` - Download objects and data sets with real-time progress
+  - `s3-cli put` - Upload local files to any storage backend
+  - `s3-cli delete` - Remove objects with concurrent batching (1000 objects/batch)
+  - `s3-cli mkdir/rmdir` - Create and remove directories/prefixes across all backends
+
+- **Multi-Protocol Support**: Unified interface works identically across:
+  - S3 (AWS, MinIO, Ceph, etc.) - `s3://` URIs
+  - Azure Blob Storage - `az://` URIs
+  - Google Cloud Storage - `gs://` or `gcs://` URIs
+  - Local File System - `file:///` URIs
+  - DirectIO (high-performance local) - `direct:///` URIs
+
+- **High Performance**: 
+  - S3 reads: Up to 4.8 GB/s throughput
+  - S3 writes: Up to 3.0 GB/s throughput
+  - Zero-copy Python integration (NumPy/PyTorch/TensorFlow compatible)
+  - Multi-endpoint load balancing for distributed I/O (v0.9.14+)
+  - Pre-stat size caching for 2.5x faster multi-object downloads
+
+- **Data Format Support**: 
+  - TFRecord with automatic index generation
+  - NPZ (NumPy Zip) with multi-array support
+  - HDF5 native format support
+  - Raw binary with automatic data generation
+  - Configurable pseudo-random and cryptographic random data generation
+
+**Documentation**: 
+- [CLI Guide](https://github.com/russfellows/s3dlio/blob/main/docs/CLI_GUIDE.md) - Complete command reference
+- [Python API Guide](https://github.com/russfellows/s3dlio/blob/main/docs/PYTHON_API_GUIDE.md) - Python library reference
+- [Multi-Endpoint Guide](https://github.com/russfellows/s3dlio/blob/main/docs/MULTI_ENDPOINT_GUIDE.md) - Load balancing across endpoints
+- [Changelog](https://github.com/russfellows/s3dlio/blob/main/docs/Changelog.md) - Version history and features
+
+### sai3-bench - Multi-Protocol I/O Benchmarking Suite
+**Repository**: https://github.com/russfellows/sai3-bench
+
+sai3-bench is a comprehensive testing wrapper around s3dlio that provides:
+
+- **Multi-Protocol Benchmarking**: Test identical workloads across S3, Azure, GCS, and local storage
+
+- **YAML-Based Workload Configuration**:
+  - Multiple operation types: GET, PUT, DELETE, METADATA
+  - Realistic size distributions: lognormal (many small, few large), uniform, fixed
+  - Deduplication and compression simulation
+  - Directory tree structures for filesystem-like access patterns
+  
+- **MLCommons Storage Workloads**:
+  - ResNet50 CNN training patterns (sequential image batch access)
+  - UNet3D volumetric processing patterns (random + sequential mixed access)
+  - Multi-client configurations (1-client, 4-client, 8-client)
+  - Support for both preparation and read-only test phases
+
+- **Distributed Testing**:
+  - Multi-agent coordination using gRPC
+  - Automated SSH deployment across multiple hosts
+  - Containerized agents (Docker/Podman support)
+  - Automatic result aggregation with HDR histograms
+  - Graceful shutdown and error handling
+
+- **Workload Replay & Analysis**:
+  - Capture production I/O traces using s3dlio op-logs
+  - Replay with microsecond-accurate timing
+  - URI remapping for migration testing (single→single, single→multiple, multiple→single)
+  - Speed adjustment for accelerated/decelerated load testing
+
+- **Performance Metrics**:
+  - HDR histograms with percentile analysis (p50, p90, p99, p99.9)
+  - TSV export with per-size-bucket and aggregate statistics
+  - Time-series performance logging (v0.8.17+)
+  - Per-operation throughput and latency distributions
+
+**Key Binaries**:
+- `sai3-bench run` - Execute workload benchmarks
+- `sai3-bench replay` - Replay captured operation logs
+- `sai3-bench util` - Utilities (health checks, counting, cleanup)
+- `sai3bench-agent` - Distributed agent for multi-host testing
+- `sai3bench-ctl` - Controller coordinating distributed agents
+- `sai3-analyze` - Results consolidation tool (Excel generation)
+
+**Documentation**: 
+- [Usage Guide](https://github.com/russfellows/sai3-bench/blob/main/docs/USAGE.md) - Getting started
+- [Config Syntax](https://github.com/russfellows/sai3-bench/blob/main/docs/CONFIG_SYNTAX.md) - Configuration reference
+- [Config Examples](https://github.com/russfellows/sai3-bench/blob/main/tests/configs/README.md) - Annotated examples
+- [Distributed Testing Guide](https://github.com/russfellows/sai3-bench/blob/main/docs/DISTRIBUTED_TESTING_GUIDE.md) - Multi-host setup
+- [Data Generation Guide](https://github.com/russfellows/sai3-bench/blob/main/docs/DATA_GENERATION.md) - Workload patterns
+- [Changelog](https://github.com/russfellows/sai3-bench/blob/main/docs/CHANGELOG.md) - Version history
+
 ## Container
 
 **Image**: `quay.io/russfellows-sig65/sai3-tools`
 
 This container includes:
 - **sai3-bench** - High-performance object storage benchmarking tool
+- **s3-cli** - Universal S3 command-line interface from s3dlio
 - **warp** - MinIO object storage benchmarking utility
-- **s3-cli** - S3 command-line interface from the s3dlio project
 - **Cloud CLIs** - AWS CLI, Azure CLI, Google Cloud CLI
-- **Additional tools** - Various object storage and cloud tools
+- **Additional tools** - Various object storage and cloud utilities
 
 To pull the container:
 ```bash

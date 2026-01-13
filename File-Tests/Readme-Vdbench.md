@@ -29,6 +29,16 @@ docker pull quay.io/russfellows-sig65/file-tests  # For vdbench
 
 ## vdbench Overview
 
+### Documentation Resources
+
+For detailed vdbench documentation and user guides:
+- **vdbench User Guide (v50407)** - Complete reference documentation
+  - PDF: Available from Oracle/Delphix vdbench repository
+  - Covers parameter file syntax, workload definition, tuning guidelines
+  - Includes troubleshooting and best practices for file system testing
+
+See [vdbench-scripts/README.md](vdbench-scripts/README.md) for configuration examples and execution guides.
+
 vdbench is a comprehensive file system workload generator implementing MLCommons Storage workload specifications. It provides:
 
 - **Flexible Workload Definition**
@@ -240,6 +250,25 @@ For distributed testing across multiple hosts:
 
 ## Running IOR Tests
 
+### Documentation Resources
+
+For detailed IOR documentation and configuration guides:
+- **IOR User Guide** - Complete reference for parameter configuration and interpretation
+  - Available from Argonne National Laboratory HPC team
+  - Covers POSIX, parallel file systems (Lustre, GPFS), MPI-IO patterns
+  - HDF5 and NetCDF support documentation
+
+- **IO500 Benchmark Suite** - Combined IOR + MDtest benchmarking
+  - [io500.io](https://io500.io) - Benchmark results and rankings
+  - Full specification for MLCommons Storage compliance
+  - Multi-layer testing: easy, standard, and hard tiers
+
+- **IOR GitHub Repository** - Source code and examples
+  - https://github.com/hpc/ior - Development repository with latest updates
+  - Test configurations and scaling examples
+
+See [IOR-scripts/README.md](IOR-scripts/README.md) for configuration files and execution guides.
+
 ### Prerequisites
 - Docker or container runtime
 - File system mount point
@@ -279,10 +308,12 @@ Text-based format with sections:
 
 ### IOR Configuration Files (.ini)
 INI format with sections defining:
-- File system type (POSIX, HDF5, NetCDF, etc.)
-- Number of processes/threads
-- File sizes and access patterns
+- File system type (POSIX, HDF5, NetCDF, MPI-IO, etc.)
+- Number of processes/threads and task distribution
+- File sizes, block sizes, and transfer sizes
+- Sequential or random access patterns
 - Test duration and iteration counts
+- Read/write operations or combined transfers
 
 ## Output and Analysis
 
