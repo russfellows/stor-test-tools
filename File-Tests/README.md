@@ -4,15 +4,17 @@ This directory contains configuration files for testing file systems using **IOR
 
 ## Testing Tools
 
-### IOR - Parallel File I/O Benchmark
+### IO500 - HPC Storage Benchmark Suite
 **Container**: `quay.io/russfellows-sig65/io500`
 
-IOR (Interleaved-Or-Random) is a parallel file I/O benchmark for distributed file system testing with:
+IO500 is the official HPC storage benchmark suite that coordinates multiple benchmarking tools for distributed file system testing:
+- **IOR** (Interleaved-Or-Random) - Parallel file I/O operations with ior-easy and ior-hard tiers
+- **MDtest** - Metadata operation benchmarking with mdtest-easy and mdtest-hard tiers
+- **pfind** - File discovery and directory traversal benchmarking
 - Multi-host MPI-based distributed execution
 - MLCommons Storage workload patterns
-- Metadata operation testing (MDtest tier)
 - Support for Lustre, GPFS, POSIX file systems
-- Comprehensive performance metrics and aggregation
+- Comprehensive composite scoring (bandwidth + IOPS)
 
 **For detailed setup and execution instructions, see**: [IOR-scripts/README.md](IOR-scripts/README.md)
 
@@ -55,14 +57,14 @@ File-Tests/
 
 ## Test Configurations
 
-### IOR Configurations
+### IO500 Configurations
 
 Located in `IOR-scripts/`:
 
-- **IOR-MDtest-full.ini** - Comprehensive metadata testing configuration
+- **IOR-MDtest-full.ini** - IO500 configuration for comprehensive benchmark testing
 - **io500-mpi-coordinate-gemini-AWS.sh** - IO500 benchmark coordination for AWS infrastructure
 - **io500-mpi-coordinate-gemini-GCP.sh** - IO500 benchmark coordination for Google Cloud
-- **drop-cache-GCP.sh** - Cache dropping utility for consistent GCP testing
+- **drop-cache-GCP.sh** - Cache dropping utility for consistent GCP testing (critical for accurate results)
 
 ### vdbench Configurations
 
@@ -88,7 +90,7 @@ Simulates 3D UNet segmentation model training I/O patterns:
 - Network connectivity (for distributed tests)
 - Sufficient disk space for test data
 
-### IOR Test Execution
+### IO500 Test Execution
 
 ```bash
 # Pull the container
@@ -102,10 +104,10 @@ bash drop-cache-GCP.sh                     # Drop caches at the right timing
 # For basic single-host testing
 docker run -it -v /mount/point:/testdir \
   quay.io/russfellows-sig65/io500 \
-  ior -f IOR-MDtest-full.ini -o /testdir/
+  bash -c "cd /testdir && mpiexec -np 2 ./io500 IOR-MDtest-full.ini"
 ```
 
-**For comprehensive IOR setup, infrastructure requirements, cloud platform coordination, and execution guidance, see [IOR-scripts/README.md](IOR-scripts/README.md)**
+**For comprehensive IO500 setup, infrastructure requirements, cloud platform coordination, and execution guidance, see [IOR-scripts/README.md](IOR-scripts/README.md)**
 
 ### vdbench Test Example
 
@@ -160,12 +162,12 @@ cd /opt/vdbench && ./vdbench -f resnet50-1hosts_parmfile.txt -o /mnt/lustre/outp
 ## Detailed Documentation
 
 For detailed information on each tool:
-- **IOR**: See [IOR-scripts/README.md](IOR-scripts/README.md) for infrastructure setup, distributed coordination, and execution guidance
+- **IO500**: See [IOR-scripts/README.md](IOR-scripts/README.md) for infrastructure setup, distributed coordination, and execution guidance
 - **vdbench**: See [vdbench-scripts/README.md](vdbench-scripts/README.md) for configuration and execution guides
 
 ### External Documentation Resources
 
-- **IO500 Benchmark**: [io500.io](https://io500.io) - Official results, specifications for IOR Easy/Standard/Hard tiers
+- **IO500 Benchmark**: [io500.io](https://io500.io) - Official results, specifications for ior-easy/ior-hard/mdtest-easy/mdtest-hard tiers
 - **IOR GitHub**: [github.com/hpc/ior](https://github.com/hpc/ior) - Source code, wiki, and configuration examples
 - **vdbench Guide**: Oracle/Delphix vdbench user guide (v50407) - Complete parameter and tuning reference
 
