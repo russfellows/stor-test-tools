@@ -132,24 +132,104 @@ Simulates 3D UNet segmentation model training I/O patterns:
 - File system mount point (local or network)
 - For multi-host tests: multiple test hosts with shared or synchronized storage
 
+### Two Ways to Run vdbench
+
+vdbench can be executed in two modes:
+
+#### Mode 1: Agent (Listening) Mode - `start_vdb-agent.sh`
+
+Start vdbench in listening mode to accept commands from a controller/coordinator:
+
+```bash
+#!/bin/bash
+# start_vdb-agent.sh
+docker run --rm -v /mnt/lustre:/mnt/lustre --net=host -it file-tests \
+  "/opt/vdbench/vdbench" "rsh"
+```
+
+**Usage**:
+```bash
+bash start_vdb-agent.sh
+```
+
+**What it does**:
+- Starts vdbench in listening mode (rsh protocol)
+- Waits for commands from a controller on the network
+- Suitable for distributed multi-host testing where a central controller coordinates all agents
+- Mounts `/mnt/lustre` (adjust path as needed) from host into container
+
+**When to use**:
+- Distributed benchmarks with multiple coordinated agents
+- Controlled hierarchical execution across multiple test nodes
+
+#### Mode 2: Interactive Container - `start_vdb.sh`
+
+Start the container interactively and manually run vdbench from within:
+
+```bash
+#!/bin/bash
+# start_vdb.sh
+docker run -v /mnt/lustre:/mnt/lustre --net=host -it file-tests
+```
+
+**Usage**:
+```bash
+# Start container interactively
+bash start_vdb.sh
+
+# Inside the container, run vdbench with your config
+cd /opt/vdbench
+./vdbench -f vdbench-scripts/Resnet50/resnet50-1hosts_parmfile.txt -o /mnt/lustre/output
+```
+
+**Command-line options**:
+- `-f <config_file>` - Path to vdbench parameter file (required)
+- `-o <output_dir>` - Output directory for results (required)
+
+**Examples inside container**:
+```bash
+# ResNet50 single-host test
+./vdbench -f vdbench-scripts/Resnet50/resnet50-1hosts_parmfile.txt -o /mnt/lustre/results/resnet50-1h
+
+# UNet3D 4-host distributed test
+./vdbench -f vdbench-scripts/Unet3d/unet3d-4hosts_parmfile.txt -o /mnt/lustre/results/unet3d-4h
+
+# Custom parameters (8 threads, 300 second duration)
+./vdbench -f custom_config.txt -o /mnt/lustre/results/custom
+```
+
+**When to use**:
+- Single-host benchmarks
+- Manual testing and debugging
+- Standalone execution without coordinating across multiple agents
+
 ### Single-Host Test Example
 
 ```bash
 # Pull the container
 docker pull quay.io/russfellows-sig65/file-tests
 
-# Run vdbench with ResNet50 1-host configuration
+# Option 1: Direct execution
 docker run -it -v /test/mount:/testdir \
   quay.io/russfellows-sig65/file-tests \
   vdbench -f resnet50-1hosts_parmfile.txt -o /testdir/output
+
+# Option 2: Using start_vdb.sh
+bash start_vdb.sh
+# Then inside container:
+cd /opt/vdbench && ./vdbench -f resnet50-1hosts_parmfile.txt -o /mnt/lustre/output
 ```
 
 ### Multi-Host Distributed Test
 
-For distributed testing, vdbench coordinates execution across multiple hosts:
+For distributed testing across multiple hosts:
 
 1. **Prepare test hosts** with shared storage access
-2. **Run coordinator** (on primary test host):
+2. **On each agent host**, start listening mode:
+   ```bash
+   bash start_vdb-agent.sh
+   ```
+3. **On coordinator host**, run vdbench with distributed config:
    ```bash
    docker run -it \
      -e VDBENCH_HOSTS="host1,host2,host3,host4" \

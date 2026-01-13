@@ -92,16 +92,45 @@ Configuration files for 3D UNet segmentation workload patterns:
 
 2. **Pull the container** for your testing tool:
    ```bash
-   # For sai3-bench (object storage) or IOR (file system)
+   # For sai3-bench (object storage)
    docker pull quay.io/russfellows-sig65/sai3-tools
+   
+   # For IOR (file system)
+   docker pull quay.io/russfellows-sig65/io500
    
    # For vdbench (file system)
    docker pull quay.io/russfellows-sig65/file-tests
    ```
 
-3. **Run tests** using the configuration files provided in the respective directories
+3. **Run tests** using provided shell scripts or direct container commands
 
 4. **Analyze results** using the benchmarking tool's output and analysis features
+
+## Shell Scripts for vdbench
+
+Two utility shell scripts are provided to simplify vdbench execution:
+
+### `start_vdb-agent.sh` - Agent (Listening) Mode
+Starts vdbench in listening mode for distributed multi-host testing:
+```bash
+docker run --rm -v /mnt/lustre:/mnt/lustre --net=host -it file-tests \
+  "/opt/vdbench/vdbench" "rsh"
+```
+**Use for**: Distributed benchmarks with coordinated agents across multiple hosts
+
+### `start_vdb.sh` - Interactive Container Mode
+Starts the container interactively for manual vdbench execution:
+```bash
+docker run -v /mnt/lustre:/mnt/lustre --net=host -it file-tests
+```
+**Inside container, run**:
+```bash
+cd /opt/vdbench
+./vdbench -f <config_file> -o <output_dir>
+```
+**Use for**: Single-host tests and manual testing/debugging
+
+See [File-Tests/Readme-Vdbench.md](File-Tests/Readme-Vdbench.md) for detailed usage examples.
 
 ## Configuration Files
 

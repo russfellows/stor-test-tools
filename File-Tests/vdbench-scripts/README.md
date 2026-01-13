@@ -61,6 +61,50 @@ vdbench configurations use parameter files (.txt) with sections:
 
 For detailed instructions on running these tests, see [../Readme-Vdbench.md](../Readme-Vdbench.md)
 
+### Quick Start with Shell Scripts
+
+Two shell scripts are provided to simplify vdbench execution:
+
+#### Agent (Listening) Mode: `start_vdb-agent.sh`
+Start vdbench in listening mode for distributed multi-host testing:
+
+```bash
+docker run --rm -v /mnt/lustre:/mnt/lustre --net=host -it file-tests \
+  "/opt/vdbench/vdbench" "rsh"
+```
+
+**Use for**: Multi-host distributed benchmarks where agents listen for a coordinator
+
+#### Interactive Mode: `start_vdb.sh`
+Start the container interactively and manually execute vdbench:
+
+```bash
+docker run -v /mnt/lustre:/mnt/lustre --net=host -it file-tests
+```
+
+**Use for**: Single-host tests and manual execution
+
+### Running vdbench from Container
+
+Once inside the container (using `start_vdb.sh`), run:
+
+```bash
+cd /opt/vdbench
+
+# Basic syntax
+./vdbench -f <config_file> -o <output_directory>
+
+# Example: ResNet50 single-host test
+./vdbench -f vdbench-scripts/Resnet50/resnet50-1hosts_parmfile.txt -o /mnt/lustre/output
+
+# Example: UNet3D 4-host distributed test
+./vdbench -f vdbench-scripts/Unet3d/unet3d-4hosts_parmfile.txt -o /mnt/lustre/results
+```
+
+**Command-line options**:
+- `-f <config_file>` - vdbench parameter file to use (required)
+- `-o <output_dir>` - Output directory for results, logs, and statistics (required)
+
 ### Basic Example
 
 ```bash

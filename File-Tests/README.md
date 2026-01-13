@@ -98,15 +98,53 @@ docker run -it -v /mount/point:/testdir \
 
 ### vdbench Test Example
 
+vdbench can be run in two modes using provided shell scripts:
+
+#### Mode 1: Agent (Listening) Mode
+Start vdbench as an agent listening for commands from a coordinator:
+
+```bash
+# start_vdb-agent.sh
+docker run --rm -v /mnt/lustre:/mnt/lustre --net=host -it file-tests \
+  "/opt/vdbench/vdbench" "rsh"
+```
+
+**Use for**: Distributed multi-host testing with centralized coordination
+
+#### Mode 2: Interactive Container
+Start the container interactively and run vdbench manually:
+
+```bash
+# start_vdb.sh
+docker run -v /mnt/lustre:/mnt/lustre --net=host -it file-tests
+
+# Inside container:
+cd /opt/vdbench
+./vdbench -f <config_file> -o <output_dir>
+```
+
+**Use for**: Single-host tests and manual execution
+
+#### Quick Example
+
 ```bash
 # Pull the container
 docker pull quay.io/russfellows-sig65/file-tests
 
-# Run vdbench with ResNet50 1-host configuration
+# Option 1: Direct execution
 docker run -it -v /mount/point:/testdir \
   quay.io/russfellows-sig65/file-tests \
-  vdbench -f resnet50-1hosts_parmfile.txt
+  vdbench -f resnet50-1hosts_parmfile.txt -o /testdir/output
+
+# Option 2: Using interactive mode
+docker run -it -v /mnt/lustre:/mnt/lustre --net=host file-tests
+# Then inside:
+cd /opt/vdbench && ./vdbench -f resnet50-1hosts_parmfile.txt -o /mnt/lustre/output
 ```
+
+**Command-line options**:
+- `-f <config_file>` - Parameter file path (required)
+- `-o <output_dir>` - Output directory for results (required)
 
 ## Detailed Documentation
 
