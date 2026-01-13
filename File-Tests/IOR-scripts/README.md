@@ -163,19 +163,23 @@ Two wrapper scripts to simplify IO500 execution on cloud platforms:
 ### Step 1: Prepare Configuration Files
 
 Ensure three files are in place:
-- `io500.ini` (or your custom configuration file) - Official IO500 config or adapted version
+- `io500.ini` - Use the included **IOR-MDtest-full.ini** file from this directory
 - `hosts.txt` with client VM hostnames
 - `io500-mpi-coordinate-gemini-AWS.sh` or `io500-mpi-coordinate-gemini-GCP.sh`
 
-**Get official IO500 configuration**:
+**Use the included configuration file**:
 ```bash
-# Generate complete configuration with all available options
-./io500 --list > config-all.ini
+# Copy the included IO500 configuration file
+cp IOR-MDtest-full.ini io500.ini
 
-# Use minimal test configuration for quick validation
-./io500 --list > config-test.ini
-# Edit config-test.ini with appropriate test parameters
+# Review the configuration parameters
+cat io500.ini
+
+# Edit if needed for your specific test requirements
+vim io500.ini
 ```
+
+The included `IOR-MDtest-full.ini` provides a comprehensive metadata-focused benchmark configuration. Modify test parameters (file counts, block sizes, process counts) as needed for your specific testing scenario.
 
 ### Step 2: Edit Coordination Script
 
