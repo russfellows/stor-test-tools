@@ -200,7 +200,7 @@ Replace placeholders with your actual values:
 - Configuration file path (io500.ini)
 - Output directory for results
 
-### Step 3: Execute IO500 Benchmark
+### Step 3: Execute Coordination Script
 
 From the **launcher VM**, run the coordination script:
 
@@ -216,11 +216,40 @@ bash io500-mpi-coordinate-gemini-GCP.sh
 1. Validates io500.ini configuration
 2. Distributes configuration to all client VMs
 3. Verifies connectivity with all clients
-4. Launches MPI-coordinated `io500` execution across all nodes
-5. Collects results from all phases (ior-easy, ior-hard, mdtest-easy, mdtest-hard, find)
-6. Aggregates performance metrics (bandwidth, IOPS, composite score)
+4. Generates and outputs the MPI command to execute
 
-### Step 4: Monitor Execution and Drop Caches
+**Output example**:
+```bash
+# Script outputs a command like:
+mpiexec -hosts client-1,client-2,client-3,client-4,client-5,client-6,client-7,client-8 \
+  -np 8 ./io500 io500.ini
+```
+
+### Step 4: Run the IO500 Benchmark
+
+Execute the MPI command output by the coordination script from Step 3:
+
+```bash
+# Copy the mpiexec command output from Step 3 and execute it
+mpiexec -hosts client-1,client-2,client-3,client-4,client-5,client-6,client-7,client-8 \
+  -np 8 ./io500 io500.ini
+```
+
+This command:
+- Launches IO500 across all specified client nodes via MPI
+- Executes all test phases in sequence (write, read, metadata operations)
+- Produces real-time progress output on the launcher VM
+- Generates result files (result_summary.txt, result.txt) in the configured output directory
+
+**Expected execution time**: 30 minutes to several hours depending on:
+- File system performance
+- Data set size configured in io500.ini
+- Number of client nodes
+- Storage capacity
+
+### Step 5: Monitor Execution and Drop Caches
+
+While IO500 executes, monitor the output for phase transitions. When write phases complete, drop file system caches in a **separate terminal** on the launcher VM.
 
 IO500 executes test phases sequentially:
 
@@ -272,7 +301,7 @@ bash drop-cache-GCP.sh
 - ❌ Too late (read phase started): Reads show cached performance instead of storage performance
 - ✅ Correct: 2-3 seconds after all write phases complete, before first read phase begins (~5-10 second window)
 
-### Step 5: Collect and Analyze Results
+### Step 6: Collect and Analyze Results
 
 After IO500 completes, results are available in multiple formats:
 
