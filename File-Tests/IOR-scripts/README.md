@@ -42,7 +42,6 @@ The `io500` command-line tool orchestrates all test phases in sequence, producin
 
 ## Directory Contents
 
-- **io500-mpi-coordinate-gemini-AWS.sh** - Distributed test coordination script for AWS infrastructure
 - **io500-mpi-coordinate-gemini-GCP.sh** - Distributed test coordination script for Google Cloud
 - **drop-cache-GCP.sh** - Cache clearing utility for consistent benchmarking
 - **IOR-MDtest-full.ini** - Sample IO500 configuration for metadata-focused testing (deprecated - use official configs)
@@ -135,16 +134,7 @@ client-8
 - All hosts must have network connectivity to launcher
 - All hosts must have access to shared file system mount
 
-### 3. Platform-Specific Coordination Scripts
-
-Two wrapper scripts to simplify IO500 execution on cloud platforms:
-
-**io500-mpi-coordinate-gemini-AWS.sh** - For AWS infrastructure
-- Configures SSH access to AWS EC2 instances
-- Sets up MPI environment for distributed execution
-- Edit to include your AWS username, PEM key path, instance IPs/hostnames
-- Configure shared file system mount points
-- Output directory for results
+### 3. Platform-Specific Coordination Script
 
 **io500-mpi-coordinate-gemini-GCP.sh** - For Google Cloud infrastructure
 - Configures SSH access to Google Compute Engine instances
@@ -165,7 +155,7 @@ Two wrapper scripts to simplify IO500 execution on cloud platforms:
 Ensure three files are in place:
 - `io500.ini` - Use the included **IOR-MDtest-full.ini** file from this directory
 - `hosts.txt` with client VM hostnames
-- `io500-mpi-coordinate-gemini-AWS.sh` or `io500-mpi-coordinate-gemini-GCP.sh`
+- `io500-mpi-coordinate-gemini-GCP.sh` coordination script
 
 **Use the included configuration file**:
 ```bash
@@ -183,13 +173,9 @@ The included `IOR-MDtest-full.ini` provides a comprehensive metadata-focused ben
 
 ### Step 2: Edit Coordination Script
 
-Edit the appropriate platform script with your environment:
+Edit the coordination script with your environment:
 
 ```bash
-# For AWS
-vim io500-mpi-coordinate-gemini-AWS.sh
-
-# For Google Cloud
 vim io500-mpi-coordinate-gemini-GCP.sh
 ```
 
@@ -205,10 +191,6 @@ Replace placeholders with your actual values:
 From the **launcher VM**, run the coordination script:
 
 ```bash
-# AWS
-bash io500-mpi-coordinate-gemini-AWS.sh
-
-# Google Cloud
 bash io500-mpi-coordinate-gemini-GCP.sh
 ```
 
