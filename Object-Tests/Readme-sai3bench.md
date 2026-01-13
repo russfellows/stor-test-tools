@@ -200,9 +200,11 @@ Configurations simulating 3D UNet segmentation model training I/O patterns:
 - Docker or container runtime
 - Object storage endpoint (S3 API compatible)
 - Network connectivity to the storage endpoint
-- For multi-host tests: multiple test hosts with network access
+- For multi-host tests: multiple test hosts with network access and SSH connectivity
 
 ### Single-Host Test Example
+
+For basic testing on a single machine:
 
 ```bash
 # Pull the container
@@ -210,28 +212,129 @@ docker pull quay.io/russfellows-sig65/sai3-tools
 
 # Run sai3-bench with ResNet50 1-host read-only test
 docker run -it quay.io/russfellows-sig65/sai3-tools sai3-bench run \
-  --config /path/to/resnet50_1-host-get-only.yaml \
+  --config resnet50_1-host-get-only.yaml \
   --endpoint s3.example.com:9000 \
   --bucket test-bucket
 ```
 
-### Multi-Host Distributed Test
+### Distributed Multi-Host Testing Architecture
 
-For distributed testing, the controller coordinates multiple agent instances:
+sai3-bench uses a distributed agent-controller architecture similar to vdbench:
 
-1. **Start controller** (on main test host):
+- **sai3bench-agent**: Lightweight agent that runs on each worker node and listens for commands from the controller
+- **sai3bench-ctl**: Controller that coordinates workload execution across multiple agents
+
+The configuration file (YAML) can specify the list of agents, or agents can be provided via command-line arguments to the controller.
+
+#### Agent Command Options
+
+Start an agent on each worker node:
+
+```bash
+docker run -d \
+  --name sai3-agent \
+  -p 7761:7761 \
+  quay.io/russfellows-sig65/sai3-tools \
+  sai3bench-agent \
+    --listen 0.0.0.0:7761 \
+    --verbose
+```
+
+**Common agent options**:
+- `--listen <ADDR>` - Listen address (default: 0.0.0.0:7761)
+- `--verbose` or `-v` - Increase verbosity (use `-vv` for debug, `-vvv` for trace)
+- `--tls` - Enable TLS with self-signed certificate
+- `--op-log <PATH>` - Optional operation log path for detailed tracing
+
+#### Controller Command Examples
+
+**Option 1: Agents specified in YAML configuration file**
+
+If your YAML config includes a `distributed.agents` section listing agent addresses, start the controller without specifying agents:
+
+```bash
+docker run -it quay.io/russfellows-sig65/sai3-tools sai3bench-ctl \
+  run \
+  --config resnet50_4-host-get-only.yaml
+```
+
+Your YAML file should include:
+```yaml
+distributed:
+  agents:
+    - agent1.example.com:7761
+    - agent2.example.com:7761
+    - agent3.example.com:7761
+    - agent4.example.com:7761
+```
+
+**Option 2: Agents specified on controller command line**
+
+If agents are not in the configuration file, specify them when starting the controller:
+
+```bash
+docker run -it quay.io/russfellows-sig65/sai3-tools sai3bench-ctl \
+  --agents agent1.example.com:7761,agent2.example.com:7761,agent3.example.com:7761,agent4.example.com:7761 \
+  run \
+  --config resnet50_4-host-get-only.yaml
+```
+
+#### Multi-Host Test Workflow
+
+1. **Start agents** on each worker node (in background):
    ```bash
-   docker run -it quay.io/russfellows-sig65/sai3-tools sai3-bench controller \
-     --config resnet50_4-host-get-only.yaml \
-     --agents 4
+   # On agent1
+   docker run -d --name sai3-agent -p 7761:7761 \
+     quay.io/russfellows-sig65/sai3-tools \
+     sai3bench-agent --listen 0.0.0.0:7761 --verbose
+   
+   # On agent2, agent3, agent4 (repeat similarly)
    ```
 
-2. **Start agents** (on remote test hosts):
+2. **Verify agent connectivity** (from controller host):
    ```bash
-   docker run -it quay.io/russfellows-sig65/sai3-tools sai3bench-agent \
-     --controller-ip <controller-ip> \
-     --agent-port 9001
+   docker run -it quay.io/russfellows-sig65/sai3-tools sai3bench-ctl \
+     --agents agent1.example.com:7761,agent2.example.com:7761,agent3.example.com:7761,agent4.example.com:7761 \
+     ping
    ```
+
+3. **Run distributed benchmark** (from controller host):
+   ```bash
+   docker run -it quay.io/russfellows-sig65/sai3-tools sai3bench-ctl \
+     --agents agent1.example.com:7761,agent2.example.com:7761,agent3.example.com:7761,agent4.example.com:7761 \
+     run \
+     --config resnet50_4-host-get-only.yaml
+   ```
+
+#### Controller Command Options
+
+- `--agents <AGENTS>` - Comma-separated agent addresses (host:port), optional if specified in YAML
+- `--verbose` or `-v` - Increase verbosity
+- `--tls` - Enable TLS for secure connections (requires --agent-ca)
+- `--agent-ca <PATH>` - Path to agent's self-signed certificate (required if --tls enabled)
+
+#### Controller Subcommands
+
+- `run` - Execute distributed workload from YAML configuration
+- `put` - Distributed PUT operation
+- `get` - Distributed GET operation
+- `ping` - Simple reachability check against all agents
+- `ssh-setup` - SSH setup wizard for automated agent deployment
+
+#### Example: SSH-Based Agent Setup (v0.6.11+)
+
+For automated agent deployment across multiple hosts:
+
+```bash
+docker run -it quay.io/russfellows-sig65/sai3-tools sai3bench-ctl \
+  ssh-setup
+```
+
+This interactive wizard:
+- Generates SSH keys if needed
+- Distributes keys to remote hosts
+- Verifies connectivity
+- Optionally deploys agents automatically
 
 ## Configuration File Format
 
