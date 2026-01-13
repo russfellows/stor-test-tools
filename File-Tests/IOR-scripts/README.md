@@ -213,30 +213,36 @@ bash io500-mpi-coordinate-gemini-GCP.sh
 ```
 
 **What the script does**:
-1. Validates io500.ini configuration
-2. Distributes configuration to all client VMs
-3. Verifies connectivity with all clients
-4. Generates and outputs the MPI command to execute
+1. Reads hostnames from `hosts.txt` file
+2. Validates io500.ini configuration
+3. Distributes configuration to all client VMs via SSH
+4. Verifies connectivity with all clients
+5. Generates and outputs the MPI command to execute
 
 **Output example**:
+The script reads `hosts.txt` and generates a command that references it:
 ```bash
 # Script outputs a command like:
-mpiexec -hosts client-1,client-2,client-3,client-4,client-5,client-6,client-7,client-8 \
-  -np 8 ./io500 io500.ini
+mpiexec -f hosts.txt -np 8 ./io500 io500.ini
 ```
+
+The `-f hosts.txt` flag tells MPI to read the list of available nodes from the `hosts.txt` file you created, rather than specifying hosts on the command line.
 
 ### Step 4: Run the IO500 Benchmark
 
-Execute the MPI command output by the coordination script from Step 3:
+Execute the exact MPI command output by the coordination script from Step 3:
 
 ```bash
-# Copy the mpiexec command output from Step 3 and execute it
-mpiexec -hosts client-1,client-2,client-3,client-4,client-5,client-6,client-7,client-8 \
-  -np 8 ./io500 io500.ini
+# This is an EXAMPLE - your actual command will be provided by Step 3
+# The command will be similar to:
+mpiexec -f hosts.txt -np 8 ./io500 io500.ini
 ```
 
+**Important**: Do not manually type the command shown above. Copy the exact command output by Step 3. The coordination script generates the proper command based on your specific setup (number of hosts, configuration paths, etc.).
+
 This command:
-- Launches IO500 across all specified client nodes via MPI
+- Uses the `hosts.txt` file to specify which nodes participate in the benchmark
+- Launches IO500 across all client nodes listed in hosts.txt via MPI
 - Executes all test phases in sequence (write, read, metadata operations)
 - Produces real-time progress output on the launcher VM
 - Generates result files (result_summary.txt, result.txt) in the configured output directory
@@ -244,7 +250,7 @@ This command:
 **Expected execution time**: 30 minutes to several hours depending on:
 - File system performance
 - Data set size configured in io500.ini
-- Number of client nodes
+- Number of client nodes in hosts.txt
 - Storage capacity
 
 ### Step 5: Monitor Execution and Drop Caches
