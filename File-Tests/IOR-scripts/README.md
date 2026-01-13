@@ -1,6 +1,6 @@
-# IOR - Parallel File I/O Benchmark Testing
+# IO500 - HPC Storage Benchmark Suite
 
-Distributed parallel file I/O benchmarking with **IOR** (Interleaved-Or-Random), coordinated via MPI across multiple hosts.
+Official IO500 benchmark implementation using the `io500` command-line tool to coordinate distributed parallel file I/O performance testing.
 
 ## Container
 
@@ -20,20 +20,32 @@ docker tag quay.io/russfellows-sig65/io500 io500:latest
 
 ## Overview
 
-IOR (Interleaved-Or-Random) is a parallel file I/O benchmark tool for:
+**IO500** is the official HPC storage benchmark suite that tests parallel file system performance through coordinated execution of multiple benchmark tools:
+
+- **IOR** (Interleaved-Or-Random) - Parallel file I/O operations
+  - `ior-easy` - Basic sequential read/write with small block sizes
+  - `ior-hard` - Demanding workload with striped access patterns and metadata operations
+
+- **MDtest** - Metadata operation benchmarking
+  - `mdtest-easy` - Basic file creation/deletion operations
+  - `mdtest-hard` - Complex metadata operations with file trees
+
+- **pfind** - File discovery benchmark for directory traversal
+
+**Benchmark Execution**:
+The `io500` command-line tool orchestrates all test phases in sequence, producing a composite score based on bandwidth and IOPS metrics. The suite is designed for:
 - Distributed file system performance testing
-- HPC storage evaluation
+- HPC storage evaluation  
 - MLCommons Storage workload patterns
-- Various I/O patterns: sequential, random, strided
-- Metadata operation testing
-- POSIX and specialized parallel file systems (Lustre, GPFS, HDF5, etc.)
+- Reproducible, standardized benchmarking
+- Multi-process/node coordination via MPI
 
 ## Directory Contents
 
-- **IOR-MDtest-full.ini** - Metadata-focused testing configuration
-- **io500-mpi-coordinate-gemini-AWS.sh** - Distributed test coordination for AWS infrastructure
-- **io500-mpi-coordinate-gemini-GCP.sh** - Distributed test coordination for Google Cloud
-- **drop-cache-GCP.sh** - Cache dropping utility for consistent results
+- **io500-mpi-coordinate-gemini-AWS.sh** - Distributed test coordination script for AWS infrastructure
+- **io500-mpi-coordinate-gemini-GCP.sh** - Distributed test coordination script for Google Cloud
+- **drop-cache-GCP.sh** - Cache clearing utility for consistent benchmarking
+- **IOR-MDtest-full.ini** - Sample IO500 configuration for metadata-focused testing (deprecated - use official configs)
 
 ## Infrastructure Setup
 
@@ -59,30 +71,51 @@ Before running tests, ensure:
 
 ## Configuration Files
 
-### 1. IOR.ini - Benchmark Configuration
+### 1. IO500 Configuration (.ini files)
 
-Defines IOR test parameters:
-- I/O patterns (sequential, random, strided)
-- Block sizes and object counts
-- Number of processes/tasks
-- Transfer sizes
-- Test phases and iterations
-- Read/write operations
+IO500 uses INI-format configuration files to define all test parameters. The executable `io500` coordinates the execution of IOR, MDtest, and pfind according to the configuration.
 
-**IOR Test Tiers** (IO500 specification):
-- **IOR Easy**: Basic read/write performance (smaller workloads)
-- **IOR Standard**: Standard MLCommons Storage workload (typical production)
-- **IOR Hard**: Demanding workload with metadata operations
-- **MDtest**: Metadata operation benchmarking (mkdir, stat, rmdir, unlink, etc.)
+**Phases defined in configuration**:
+- **ior-easy-write** - Large sequential write operations
+- **mdtest-easy-write** - Simple file creation operations  
+- **ior-hard-write** - Striped/random write patterns
+- **mdtest-hard-write** - Complex file tree creation
+- **find** - Directory traversal and file discovery
+- **ior-easy-read** - Sequential read operations (validates written data)
+- **mdtest-easy-stat** - File metadata queries
+- **ior-hard-read** - Striped/random read patterns
+- **mdtest-hard-stat** - Complex tree traversal with stat operations
+- **mdtest-easy-delete** - Simple file deletion
+- **mdtest-hard-delete** - Complex tree deletion
 
-**Example: IOR-MDtest-full.ini**
-- Metadata-intensive testing configuration
-- Includes file creation, stat, listing, and deletion operations
-- Useful for evaluating file system metadata performance
+**IOR Test Specifications** (from official IO500):
+- **ior-easy**: Sequential I/O with large transfers (MB/s focused)
+  - Transfer size: 2MB
+  - Block size: 2MB per process
+  - Pattern: Sequential read/write
+  - Focus: Bandwidth measurement
+
+- **ior-hard**: Complex I/O with small transfers (random access)
+  - Transfer size: 47KB
+  - Block size: 47KB per process with striping
+  - Pattern: Strided random access
+  - Focus: IOPS and latency
+
+**MDtest Specifications**:
+- **mdtest-easy**: Basic metadata operations
+  - File operations per process: 1,000,000
+  - Single directory per process
+  - Metrics: Operations per second (kIOPS)
+
+- **mdtest-hard**: Complex metadata workloads
+  - File operations per process: 1,000,000
+  - Complex tree structures with multiple directories
+  - Mixed operations: create, stat, read, delete
+  - Metrics: Operations per second (kIOPS)
 
 ### 2. hosts.txt - Client Host List
 
-Text file with one hostname per line (order matters for MPI rank mapping):
+Text file with one hostname per line (order matters for MPI process mapping):
 
 ```
 client-1
@@ -97,37 +130,52 @@ client-8
 
 **Requirements**:
 - One hostname per line
-- Hostnames must be resolvable from launcher VM
-- Order determines MPI rank assignment
+- Hostnames must be resolvable from launcher VM via SSH
+- Order determines MPI rank and process distribution
 - All hosts must have network connectivity to launcher
+- All hosts must have access to shared file system mount
 
 ### 3. Platform-Specific Coordination Scripts
 
-Two scripts for different cloud platforms - **edit with your environment details**:
+Two wrapper scripts to simplify IO500 execution on cloud platforms:
 
 **io500-mpi-coordinate-gemini-AWS.sh** - For AWS infrastructure
-- Edit to include your username, PEM key path, EC2 hostnames
-- Set correct paths to `hosts.txt` and `IOR.ini`
-- Configure output directory for results
+- Configures SSH access to AWS EC2 instances
+- Sets up MPI environment for distributed execution
+- Edit to include your AWS username, PEM key path, instance IPs/hostnames
+- Configure shared file system mount points
+- Output directory for results
 
 **io500-mpi-coordinate-gemini-GCP.sh** - For Google Cloud infrastructure
-- Edit to include your username, GCP PEM key path, GCE instance names
-- Set correct paths to `hosts.txt` and `IOR.ini`
-- Configure output directory for results
+- Configures SSH access to Google Compute Engine instances
+- Sets up MPI environment for distributed GCP execution
+- Edit to include your GCP username, SSH key path, instance names
+- Configure shared file system mount points
+- Output directory for results
 
 **drop-cache-GCP.sh** - Cache clearing utility
-- Used immediately after write phase completes
-- Ensures read phase begins with cold caches
-- Critical for accurate, reproducible benchmark results
+- Synchronizes cache clearing across all client nodes
+- Used between test phases for consistent cold-cache conditions
+- Critical for reproducible benchmark results
 
-## Running IOR Benchmarks
+## Running IO500 Benchmarks
 
 ### Step 1: Prepare Configuration Files
 
 Ensure three files are in place:
-- `IOR.ini` or your custom configuration file
+- `io500.ini` (or your custom configuration file) - Official IO500 config or adapted version
 - `hosts.txt` with client VM hostnames
 - `io500-mpi-coordinate-gemini-AWS.sh` or `io500-mpi-coordinate-gemini-GCP.sh`
+
+**Get official IO500 configuration**:
+```bash
+# Generate complete configuration with all available options
+./io500 --list > config-all.ini
+
+# Use minimal test configuration for quick validation
+./io500 --list > config-test.ini
+# Edit config-test.ini with appropriate test parameters
+```
 
 ### Step 2: Edit Coordination Script
 
@@ -142,13 +190,13 @@ vim io500-mpi-coordinate-gemini-GCP.sh
 ```
 
 Replace placeholders with your actual values:
-- SSH username
-- Path to PEM key file
-- Client VM hostnames
-- Configuration file paths
-- Output directory
+- SSH username for remote VMs
+- Path to SSH/PEM key file
+- Client VM hostnames (must match hosts.txt)
+- Configuration file path (io500.ini)
+- Output directory for results
 
-### Step 3: Execute Coordination Script
+### Step 3: Execute IO500 Benchmark
 
 From the **launcher VM**, run the coordination script:
 
@@ -161,136 +209,243 @@ bash io500-mpi-coordinate-gemini-GCP.sh
 ```
 
 **What the script does**:
-1. Parses `IOR.ini` configuration
-2. Distributes test setup to all client VMs
+1. Validates io500.ini configuration
+2. Distributes configuration to all client VMs
 3. Verifies connectivity with all clients
-4. Coordinates distributed IOR execution via MPI
-5. Collects results from all processes
-6. Aggregates and reports performance metrics
+4. Launches MPI-coordinated `io500` execution across all nodes
+5. Collects results from all phases (ior-easy, ior-hard, mdtest-easy, mdtest-hard, find)
+6. Aggregates performance metrics (bandwidth, IOPS, composite score)
 
-### Step 4: Monitor and Drop Caches
+### Step 4: Monitor Execution and Drop Caches
 
-IOR benchmarks typically have phases:
-1. **Write Phase** - Files are created and written
-2. **Read Phase** - Files are read back
-3. **Metadata Phase** - Metadata operations (if configured)
+IO500 executes test phases sequentially:
 
-**Critical**: Drop file system caches **immediately after write phase completes** and **before read phase begins**.
+1. **Write Phases**
+   - `ior-easy-write` - Large sequential writes
+   - `mdtest-easy-write` - File creation operations
+   - `ior-hard-write` - Strided/random writes
+   - `mdtest-hard-write` - Complex tree creation
+
+2. **Intermediate Phase**
+   - `find` - Directory traversal benchmark
+
+3. **Read Phases**
+   - `ior-easy-read` - Sequential reads (validates write data)
+   - `mdtest-easy-stat` - Metadata queries on written files
+   - `ior-hard-read` - Strided/random reads
+   - `mdtest-hard-stat` - Complex tree stat operations
+   - `mdtest-easy-delete` - File deletion operations
+   - `mdtest-hard-delete` - Complex tree deletion
+
+**Critical for accurate results**: Drop file system caches between write and read phases.
 
 #### Cache Dropping Timing
 
-The timing window is approximately 5 seconds:
+Approximately 5-10 second window:
 
 ```bash
 # In a SEPARATE terminal on the launcher VM
-# Monitor IOR output in first terminal
-# When you see "Write phase complete" or similar, run immediately:
+# Monitor IO500 output in first terminal
+# When write phases complete, immediately run:
 
 bash drop-cache-GCP.sh
 ```
 
 **What `drop-cache-GCP.sh` does**:
-- SSHes to each client VM
+- SSHes to each client VM in sequence
 - Executes `sync && echo 3 > /proc/sys/vm/drop_caches`
 - Drops OS-level page cache (not application buffers)
 - Completes in ~5-10 seconds for 8 VMs
 
 **Why cache dropping matters**:
-- Ensures read phase starts with cold/empty caches
-- Removes OS-level caching effects from benchmark
-- Required for reproducible, comparable results
-- Prevents cached reads from masking actual storage performance
+- Read phases require cold cache for accurate storage performance measurement
+- Without cache dropping, reads may show cached performance rather than actual storage capability
+- Required for reproducible, standardized benchmark results per IO500 specification
+- Ensures fair comparison across different storage systems
 
 **Timing examples**:
-- ❌ Too early (during write): Interferes with write phase
-- ❌ Too late (read started): Reads show cached performance, not storage performance
-- ✅ Correct: 1-2 seconds after write completes (~5 second window)
+- ❌ Too early (during write phases): Interferes with write measurements
+- ❌ Too late (read phase started): Reads show cached performance instead of storage performance
+- ✅ Correct: 2-3 seconds after all write phases complete, before first read phase begins (~5-10 second window)
 
-### Step 5: Collect Results
+### Step 5: Collect and Analyze Results
 
-After IOR completes, review metrics:
-- Aggregate write throughput (MB/sec)
-- Aggregate read throughput (MB/sec)
-- Metadata operation times (if applicable)
-- Consistency check results
-- Per-process performance details
+After IO500 completes, results are available in multiple formats:
 
-## Simple Single-Host Test
+**Console output**: Real-time execution progress with phase names and timing
+
+**result_summary.txt**: Quick reference with key metrics
+```
+[RESULT]       ior-easy-write        X.XXX GiB/s
+[RESULT]    mdtest-easy-write      XXX.X kIOPS
+[RESULT]       ior-hard-write        X.XXX GiB/s
+[RESULT]    mdtest-hard-write       XX.X kIOPS
+[RESULT]                 find     XXXX.X kIOPS
+[RESULT]        ior-easy-read        X.XXX GiB/s
+[RESULT]     mdtest-easy-stat      XXX.X kIOPS
+[RESULT]        ior-hard-read        X.XXX GiB/s
+[RESULT]     mdtest-hard-stat      XXX.X kIOPS
+[RESULT]   mdtest-easy-delete      XXX.X kIOPS
+[RESULT]     mdtest-hard-read      XXX.X kIOPS
+[RESULT]   mdtest-hard-delete      XXX.X kIOPS
+[SCORE] Bandwidth X.XXX GB/s : IOPS XXX.X kiops : TOTAL X.XXX
+```
+
+**result.txt**: Complete INI-format results with detailed metrics
+- Execution times for each phase
+- Per-command execution details
+- Configuration parameters used
+- Final composite score (Bandwidth × IOPS × Total)
+
+**Validation**: Verify results integrity
+```bash
+# Using full-featured io500
+./io500 config-used.ini --verify result.txt
+
+# Using lightweight verification tool
+./io500-verify config-used.ini result.txt
+```
+
+**Key Metrics to Review**:
+
+1. **Bandwidth Scores** (GiB/s):
+   - ior-easy-write/read: Sequential I/O performance
+   - ior-hard-write/read: Random/strided I/O performance
+
+2. **IOPS Scores** (operations per second):
+   - mdtest-easy: Basic metadata operation rate
+   - mdtest-hard: Complex metadata workload rate
+   - find: Directory traversal performance
+
+3. **Composite Score**:
+   - Combines bandwidth and IOPS into single comparable metric
+   - [VALID] - Meets IO500 compliance requirements
+   - [INVALID] - Configuration or runtime violation detected
+
+## Simple Single-Host IO500 Test
 
 For basic testing without distributed coordination:
 
 ```bash
-# Pull container
+# Pull container with io500 and dependencies
 docker pull quay.io/russfellows-sig65/io500
 
-# Run IOR directly with configuration
+# Generate test configuration
+docker run -it quay.io/russfellows-sig65/io500 \
+  io500 --list > local-test-config.ini
+
+# Edit config for your test parameters
+vim local-test-config.ini
+
+# Run IO500 with configuration
 docker run -it -v /mount/point:/testdir \
   quay.io/russfellows-sig65/io500 \
-  ior -f IOR-MDtest-full.ini -o /testdir/
+  bash -c "cd /testdir && mpiexec -np 2 ./io500 local-test-config.ini"
 ```
 
-**Note**: This bypasses distributed coordination. Use coordination scripts for multi-host benchmarks.
+**Note**: Single-node execution bypasses distributed MPI coordination. Use coordination scripts for multi-host benchmarks to utilize full testing capabilities.
 
 ## Alternative: Bare Metal Execution
 
-To run IOR directly on VMs instead of containers:
+To run IO500 directly on VMs instead of containers:
 
-1. **Install IOR** on each client VM:
+1. **Build and install io500** on launcher VM:
    ```bash
-   apt-get install ior  # or build from github.com/hpc/ior
+   git clone https://github.com/IO500/io500.git
+   cd io500
+   ./prepare.sh  # Downloads and builds IOR, MDtest, pfind
+   make
    ```
 
-2. **Use same configuration files**:
-   - `IOR.ini` - identical format
-   - `hosts.txt` - identical format
+2. **Install MPI and required tools** on all client VMs:
+   ```bash
+   # Ubuntu/Debian
+   apt-get install openmpi-bin libopenmpi-dev openssh-server
+   
+   # CentOS/RHEL
+   yum install openmpi openmpi-devel openssh-server
+   ```
 
-3. **Modify coordination scripts**:
-   - Replace Docker commands with direct `mpirun ior` invocations
-   - Update paths to installed IOR binary
-   - Adjust file system mount paths
+3. **Build io500 dependencies** on each client VM:
+   ```bash
+   cd io500 && ./prepare.sh && make
+   ```
 
-4. **Execute identically**:
-   - Run from launcher VM
-   - Monitor output and drop caches at the right time
-   - Collect results when complete
+4. **Use same configuration and coordination approach**:
+   - `io500.ini` configuration files remain identical
+   - Modify coordination scripts to use `mpiexec` instead of Docker commands
+   - Ensure all VMs have shared file system access (Lustre, NFS, etc.)
+
+5. **Execute identically**:
+   ```bash
+   # From launcher VM with MPI installed
+   mpiexec -hosts client-1,client-2,...,client-8 \
+     ./io500 io500.ini
+   ```
+
+**Advantages of bare metal**:
+- Avoid containerization overhead
+- Direct access to file system optimizations
+- Simpler debugging and profiling
+- More control over MPI configuration
+
+**Disadvantages**:
+- More complex setup and maintenance
+- Requires pre-installation on all nodes
+- Harder to reproduce across different environments
 
 ## Documentation and References
 
-### Official Resources
+### Official IO500 Resources
 
-- **IO500 Benchmark**: [io500.io](https://io500.io)
+- **IO500 Benchmark Official**: [io500.io](https://io500.io) / [github.com/IO500/io500](https://github.com/IO500/io500)
   - Official benchmark results and rankings
-  - Test tier specifications
-  - MLCommons Storage requirements
+  - Test tier specifications and scoring methodology
+  - MLCommons Storage compliance requirements
+  - Configuration templates and examples
 
-- **IOR GitHub**: [github.com/hpc/ior](https://github.com/hpc/ior)
-  - Source code and releases
-  - [Wiki](https://github.com/hpc/ior/wiki) with configuration examples
-  - Parameter reference documentation
-  - Performance tuning guides
+- **IOR Component** (used by IO500 for I/O benchmarking):
+  - [github.com/hpc/ior](https://github.com/hpc/ior) - Source code and releases
+  - [IOR Wiki](https://github.com/hpc/ior/wiki) - Configuration examples and parameter reference
+  - IOR Manual Pages available in container:
+    ```bash
+    docker run -it quay.io/russfellows-sig65/io500 man ior
+    ```
 
-- **IOR Manual Pages**: Available in container
-  ```bash
-  docker run -it quay.io/russfellows-sig65/io500 man ior
-  ```
+- **MDtest Component** (used by IO500 for metadata benchmarking):
+  - Part of IOR package, focuses on file creation/deletion operations
+  - Tests both simple and complex metadata workloads
+  - Available via `mdtest` command in container
 
-- **Argonne National Laboratory**
-  - IOR User Guide from ANL HPC team
+- **pfind Component** (used by IO500 for directory traversal):
+  - Directory discovery and file finding benchmark
+  - Part of comprehensive IO500 scoring
+
+- **Reference Documentation**:
+  - Argonne National Laboratory HPC resources for IOR
   - POSIX, MPI-IO, parallel file system patterns
-  - Performance tuning and scaling benchmarks
+  - Performance tuning and scaling best practices
 
-## IOR Configuration File Format
+## IO500 Configuration File Format
 
-IOR uses INI-style configuration files with parameters:
+IO500 configuration files (io500.ini) are INI-style with parameters for coordinating all three benchmarks:
 
+**IOR-specific parameters**:
 - **fs**: File system type (POSIX, HDF5, NetCDF, MPI-IO, etc.)
-- **nodes**: Number of MPI processes/nodes
-- **file**: Output file pattern
+- **nodes**: Number of MPI processes
 - **blockSize**: Size of data block per process
 - **transferSize**: Size of each I/O transfer
 - **repetitions**: Number of test repetitions
-- **keepFile**: Whether to keep/delete files after test
-- **verbose**: Verbosity level for output
+
+**MDtest-specific parameters**:
+- File creation/deletion patterns
+- Directory structure complexity
+- Metadata operation counts
+
+**Test phase parameters**:
+- Specifies which tests to run (ior-easy, ior-hard, mdtest-easy, mdtest-hard, find)
+- Defines cache dropping between phases
+- Sets result collection and validation rules
 
 ## Related Documentation
 
@@ -298,92 +453,3 @@ IOR uses INI-style configuration files with parameters:
 - File system testing overview: [../README.md](../README.md)
 - vdbench testing: [../vdbench-scripts/README.md](../vdbench-scripts/README.md)
 - Container registry: https://quay.io/repository/russfellows-sig65/io500
-
-4. **Execute identically**:
-   - Run from launcher VM
-   - Monitor output and drop caches at the right time
-   - Collect results when complete
-
-## Documentation and References
-
-### Official Resources
-
-- **IO500 Benchmark**: [io500.io](https://io500.io)
-  - Official benchmark results and rankings
-  - Test tier specifications
-  - MLCommons Storage requirements
-
-- **IOR GitHub**: [github.com/hpc/ior](https://github.com/hpc/ior)
-  - Source code and releases
-  - [Wiki](https://github.com/hpc/ior/wiki) with configuration examples
-  - Parameter reference documentation
-  - Performance tuning guides
-
-- **IOR Manual Pages**: Available in container
-  ```bash
-  docker run -it quay.io/russfellows-sig65/io500 man ior
-  ```
-
-- **Argonne National Laboratory**
-  - IOR User Guide from ANL HPC team
-  - POSIX, MPI-IO, parallel file system patterns
-  - Performance tuning and scaling benchmarks
-  quay.io/russfellows-sig65/io500 \
-  bash io500-mpi-coordinate-gemini-AWS.sh
-```
-
-### Distributed IO500 on GCP
-
-```bash
-# Run the GCP coordination script
-docker run -it \
-  -e GCP_PROJECT=<project> \
-  -e GCP_ZONE=<zone> \
-  quay.io/russfellows-sig65/io500 \
-  bash io500-mpi-coordinate-gemini-GCP.sh
-```
-
-### Clear Caches Before Benchmarking
-
-```bash
-# Run on GCP to ensure clean test state
-docker run -it \
-  -e GCP_INSTANCE=<instance-name> \
-  -e GCP_ZONE=<zone> \
-  quay.io/russfellows-sig65/io500 \
-  bash drop-cache-GCP.sh
-```
-
-## IOR Configuration File Format
-
-IOR uses INI-style configuration files with parameters like:
-
-- **fs**: File system type (POSIX, HDF5, NetCDF, etc.)
-- **nodes**: Number of MPI processes/nodes
-- **file**: Output file pattern
-- **blockSize**: Size of data block per process
-- **transferSize**: Size of each I/O transfer
-- **repetitions**: Number of test repetitions
-- **keepFile**: Whether to keep/delete files after test
-- **verbose**: Verbosity level for output
-
-## Prerequisites
-
-- Docker or container runtime
-- For local tests: File system mount point with proper permissions
-- For distributed tests: MPI infrastructure, multiple nodes with network connectivity
-- For cloud tests: Cloud provider credentials and resource access
-
-## Container
-
-**Image**: `quay.io/russfellows-sig65/io500`
-
-Contains IOR, IO500 tools, MPI libraries, and benchmarking utilities for MLCommons Storage workloads.
-
-See parent directory documentation for more details.
-
-## References
-
-- IOR Project: https://github.com/hpc/ior
-- IO500 Benchmark: https://www.vi4io.org/io500/
-- IOR Documentation: https://github.com/hpc/ior/wiki
