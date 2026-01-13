@@ -1,0 +1,52 @@
+<title>Vdbench output/parmfile.html</title><pre>
+
+* Contents of parameter file: /opt/vdbench/./unet3d_8hosts_v3.txt
+
+create_anchors=yes
+compratio=1
+
+hd=default,shell=vdbench,master=10.138.0.10
+hd=host1,system=10.138.0.28
+hd=host2,system=10.138.0.29
+hd=host3,system=10.138.0.30
+hd=host4,system=10.138.0.31
+#hd=host5,system=10.138.0.32
+#hd=host6,system=10.138.0.33
+#hd=host7,system=10.138.0.37
+#hd=host8,system=10.138.0.39
+
+# FSD section
+fsd=fsd_h1,anchor=/mnt/lustre/unet3d/host1,shared=no,width=28,depth=2,files=64,sizes=(1m,10,2m,20,4m,30,8m,25,16m,10,32m,5)
+fsd=fsd_h2,anchor=/mnt/lustre/unet3d/host2,shared=no,width=28,depth=2,files=64,sizes=(1m,10,2m,20,4m,30,8m,25,16m,10,32m,5)
+fsd=fsd_h3,anchor=/mnt/lustre/unet3d/host3,shared=no,width=28,depth=2,files=64,sizes=(1m,10,2m,20,4m,30,8m,25,16m,10,32m,5)
+fsd=fsd_h4,anchor=/mnt/lustre/unet3d/host4,shared=no,width=28,depth=2,files=64,sizes=(1m,10,2m,20,4m,30,8m,25,16m,10,32m,5)
+#fsd=fsd_h5,anchor=/mnt/lustre/unet3d/host5,shared=no,width=28,depth=2,files=64,sizes=(1m,10,2m,20,4m,30,8m,25,16m,10,32m,5)
+#fsd=fsd_h6,anchor=/mnt/lustre/unet3d/host6,shared=no,width=28,depth=2,files=64,sizes=(1m,10,2m,20,4m,30,8m,25,16m,10,32m,5)
+#fsd=fsd_h7,anchor=/mnt/lustre/unet3d/host7,shared=no,width=28,depth=2,files=64,sizes=(1m,10,2m,20,4m,30,8m,25,16m,10,32m,5)
+#fsd=fsd_h8,anchor=/mnt/lustre/unet3d/host8,shared=no,width=28,depth=2,files=64,sizes=(1m,10,2m,20,4m,30,8m,25,16m,10,32m,5)
+
+# FWD section
+fwd=fmt_h1,fsd=fsd_h1,operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host1
+fwd=fmt_h2,fsd=fsd_h2,operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host2
+fwd=fmt_h3,fsd=fsd_h3,operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host3
+fwd=fmt_h4,fsd=fsd_h4,operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host4
+#fwd=fmt_h5,fsd=fsd_h5,operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host5
+#fwd=fmt_h6,fsd=fsd_h6,operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host6
+#fwd=fmt_h7,fsd=fsd_h7,operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host7
+#fwd=fmt_h8,fsd=fsd_h8,operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host8
+
+# FWD Read all section
+fwd=rdall_h1,fsd=(fsd_h1-fsd_h4),operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host1
+fwd=rdall_h2,fsd=(fsd_h1-fsd_h4),operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host2
+fwd=rdall_h3,fsd=(fsd_h1-fsd_h4),operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host3
+fwd=rdall_h4,fsd=(fsd_h1-fsd_h4),operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host4
+#fwd=rdall_h5,fsd=(fsd_h1-fsd_h8),operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host5
+#fwd=rdall_h6,fsd=(fsd_h1-fsd_h8),operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host6
+#fwd=rdall_h7,fsd=(fsd_h1-fsd_h8),operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host7
+#fwd=rdall_h8,fsd=(fsd_h1-fsd_h8),operation=read,fileio=sequential,xfersize=1m,threads=32,fileselect=(poisson,5),host=host8
+
+# RWD section
+rd=step1,fwd=fmt_*,fwdrate=max,format=(clean,only),elapsed=10,interval=1
+rd=step2,fwd=fmt_*,fwdrate=max,format=(restart,only),elapsed=600,interval=1
+rd=rd_run,fwd=rdall_*,fwdrate=max,format=no,elapsed=300,warmup=30,interval=1
+
