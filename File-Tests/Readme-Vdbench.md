@@ -253,19 +253,29 @@ For distributed testing across multiple hosts:
 ### Documentation Resources
 
 For detailed IOR documentation and configuration guides:
-- **IOR User Guide** - Complete reference for parameter configuration and interpretation
-  - Available from Argonne National Laboratory HPC team
-  - Covers POSIX, parallel file systems (Lustre, GPFS), MPI-IO patterns
-  - HDF5 and NetCDF support documentation
 
-- **IO500 Benchmark Suite** - Combined IOR + MDtest benchmarking
-  - [io500.io](https://io500.io) - Benchmark results and rankings
-  - Full specification for MLCommons Storage compliance
-  - Multi-layer testing: easy, standard, and hard tiers
+- **IO500 Benchmark Specification** - Complete MLCommons Storage specification
+  - [io500.io](https://io500.io) - Official benchmark results and test rankings
+  - Test types: IO500-Easy, IO500-Standard, IO500-Hard with specific parameters
+  - IOR Easy, Standard, Hard tier definitions and benchmark methodology
+  - MDtest (metadata operations) tier specifications
 
-- **IOR GitHub Repository** - Source code and examples
-  - https://github.com/hpc/ior - Development repository with latest updates
-  - Test configurations and scaling examples
+- **IOR Documentation & Configuration**
+  - [IOR GitHub Wiki](https://github.com/hpc/ior/wiki) - Test configuration examples and parameter reference
+  - [GitHub hpc/ior](https://github.com/hpc/ior) - Source code, releases, and issue tracking
+  - Complete parameter documentation for IOR Easy/Standard/Hard tiers
+  - Performance tuning guides for different parallel file systems
+
+- **Argonne National Laboratory Documentation**
+  - IOR User Guide from ANL HPC team - POSIX, MPI-IO, parallel file system patterns
+  - IOR manual pages (available in container: `man ior`)
+  - Scaling benchmarks and performance analysis guides
+
+- **IOR Test Tiers Reference**
+  - **IOR Easy**: Basic read/write performance (smaller workloads)
+  - **IOR Standard**: Standard MLCommons Storage workload (typical production)
+  - **IOR Hard**: Demanding workload with metadata operations and striping
+  - **MDtest**: Metadata operation benchmarking (mkdir, stat, unlink, etc.)
 
 See [IOR-scripts/README.md](IOR-scripts/README.md) for configuration files and execution guides.
 

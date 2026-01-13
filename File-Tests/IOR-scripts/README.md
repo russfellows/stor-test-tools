@@ -2,6 +2,28 @@
 
 Configuration files for parallel file I/O benchmarking with **IOR**.
 
+## Documentation Resources
+
+For comprehensive IOR and IO500 documentation:
+
+- **IO500 Benchmark Specification**: [io500.io](https://io500.io)
+  - Official benchmark rankings and results
+  - Test tier specifications: IOR Easy, Standard, Hard
+  - MDtest tier specifications for metadata operations
+  - MLCommons Storage compliance documentation
+
+- **IOR GitHub Repository**: [github.com/hpc/ior](https://github.com/hpc/ior)
+  - Source code and latest releases
+  - [IOR Wiki](https://github.com/hpc/ior/wiki) - Configuration examples and parameter reference
+  - Issue tracking and feature discussions
+  - Performance tuning guides
+
+- **IOR Test Tiers**:
+  - **IOR Easy**: Basic read/write workload (smaller file sizes, fewer processes)
+  - **IOR Standard**: Standard MLCommons Storage workload (balanced performance metrics)
+  - **IOR Hard**: Demanding workload with metadata operations and striping patterns
+  - **MDtest**: Dedicated metadata benchmarking (mkdir, stat, unlink, file listing)
+
 ## Directory Contents
 
 - **IOR-MDtest-full.ini** - Comprehensive metadata testing configuration
@@ -17,37 +39,41 @@ IOR (Interleaved-Or-Random) is a parallel file I/O benchmark tool implementing M
 - MLCommons Storage benchmark patterns (ResNet50, UNet3D)
 - Various I/O access patterns (sequential, random, strided)
 - Metadata operation performance
-- Both POSIX and specialized file systems
+- Both POSIX and specialized file systems (Lustre, GPFS, HDF5, etc.)
 
 ## Configuration Files
 
 ### IOR-MDtest-full.ini
 Comprehensive metadata testing configuration for IOR:
 - Focuses on metadata operations (file creation, deletion, listing)
-- Tests file system performance under metadata-heavy workloads
+- Tests file system performance under metadata-heavy workloads (MDtest tier)
 - Suitable for evaluating file system metadata performance
 - Useful for benchmarking name servers and directory operations
+- Part of IO500 Hard tier testing
 
 ### IO500 Scripts
-IO500 is a comprehensive HPC storage benchmarking suite:
+IO500 is a comprehensive HPC storage benchmarking suite combining IOR and MDtest:
 
 **io500-mpi-coordinate-gemini-AWS.sh**
-- Coordinates IO500 benchmark execution on AWS infrastructure
-- Uses MPI for distributed parallel execution
+- Orchestrates IO500 benchmark execution on AWS infrastructure
+- Uses MPI for distributed parallel execution across nodes
 - Targets AWS Gemini-based storage systems
-- Manages test coordination across multiple EC2 instances
+- Manages test coordination and result aggregation
+- Runs IOR Easy, Standard, Hard, and MDtest tiers
 
 **io500-mpi-coordinate-gemini-GCP.sh**
-- Coordinates IO500 benchmark execution on Google Cloud
-- Uses MPI for distributed parallel execution
+- Orchestrates IO500 benchmark execution on Google Cloud
+- Uses MPI for distributed parallel execution across GCP instances
 - Targets GCP-based storage systems
-- Manages test coordination across multiple GCP instances
+- Manages test coordination and performance monitoring
+- Runs complete IO500 test suite (all four tiers)
 
 ### drop-cache-GCP.sh
-Utility script for cache management:
+Utility script for consistent benchmarking:
 - Clears file system caches on Google Cloud instances
-- Ensures consistent test baseline between runs
-- Needed for reproducible benchmark results
+- Ensures clean baseline between test runs
+- Required for reproducible benchmark results
+- Used before IOR Easy tier for consistent measurements
 - Typically run between test iterations
 
 ## Usage

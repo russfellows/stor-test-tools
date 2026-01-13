@@ -149,8 +149,14 @@ cd /opt/vdbench && ./vdbench -f resnet50-1hosts_parmfile.txt -o /mnt/lustre/outp
 ## Detailed Documentation
 
 For detailed information on each tool:
-- **IOR**: See [Readme-Vdbench.md](Readme-Vdbench.md) or the IOR-scripts/ directory
-- **vdbench**: See [Readme-Vdbench.md](Readme-Vdbench.md)
+- **IOR**: See [Readme-Vdbench.md](Readme-Vdbench.md) for IOR test types (Easy, Standard, Hard, MDtest) and documentation links
+- **vdbench**: See [Readme-Vdbench.md](Readme-Vdbench.md) for shell script execution and configuration guides
+
+### External Documentation Resources
+
+- **IO500 Benchmark**: [io500.io](https://io500.io) - Official results, specifications for IOR Easy/Standard/Hard tiers
+- **IOR GitHub**: [github.com/hpc/ior](https://github.com/hpc/ior) - Source code, wiki, and configuration examples
+- **vdbench Guide**: Oracle/Delphix vdbench user guide (v50407) - Complete parameter and tuning reference
 
 ## Container Images
 
